@@ -1,0 +1,2 @@
+# condition card is not working
+# mer capabilities ("på vei mot", "tidspunkt", "nedtelling")
