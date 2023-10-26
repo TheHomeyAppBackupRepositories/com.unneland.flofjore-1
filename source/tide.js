@@ -2,7 +2,7 @@
 
 var https = require('https');
 const xmlJs = require('xml-js');
-var DOMParser = require("xmldom").DOMParser;
+var DOMParser = require("@xmldom/xmldom").DOMParser;
 var xpath = require("xpath");
 const EventEmitter = require('events');
 var polynomial = require('everpolate').polynomial
@@ -29,6 +29,11 @@ class Tide {
     var today = new Date();
 
     var nextTide = null;
+
+    if (!this.allEvents) {
+      this.homey.log('No tide event data available, skipping');
+      return;
+    }
     this.allEvents.forEach((event) => {
       if (!nextTide && event.timestamp > today) {
         if (event.type == 'highest') {
@@ -57,19 +62,25 @@ class Tide {
       this.homey.log('No polynomial data available, skipping');
       return;
     }
-    var tideLevels = polynomial([today.getTime(), today.getTime() + (60*60000), today.getTime() + (10*60000)], 
-                        this.polynomialData.x, this.polynomialData.y);
 
-    var currentTideLevel = tideLevels[0];
-    var tideChangeNextHour = tideLevels[1] - currentTideLevel;
-    var tideChangeNext10Min = tideLevels[2] - currentTideLevel;
-    var formattedHours = nextTide.timestamp.toLocaleTimeString("nb", {timeZone: 'Europe/Oslo', hour: '2-digit', minute:'2-digit'});
+    try {
+      var tideLevels = polynomial([today.getTime(), today.getTime() + (60*60000), today.getTime() + (10*60000)], 
+      this.polynomialData.x, this.polynomialData.y);
 
-    callback({ 'tideChangeNextHour': parseFloat(tideChangeNextHour.toFixed(2)),
-                    'tideChangeNext10Min': parseFloat(tideChangeNext10Min.toFixed(2)),
-                    'tideLevel': parseFloat(currentTideLevel.toFixed(2)),
-                    'tideNextType': nextTide.type,
-                    'tideNextTime': formattedHours});
+      var currentTideLevel = tideLevels[0];
+      var tideChangeNextHour = tideLevels[1] - currentTideLevel;
+      var tideChangeNext10Min = tideLevels[2] - currentTideLevel;
+      var formattedHours = nextTide.timestamp.toLocaleTimeString("nb", {timeZone: 'Europe/Oslo', hour: '2-digit', minute:'2-digit'});
+
+      callback({ 'tideChangeNextHour': parseFloat(tideChangeNextHour.toFixed(2)),
+        'tideChangeNext10Min': parseFloat(tideChangeNext10Min.toFixed(2)),
+        'tideLevel': parseFloat(currentTideLevel.toFixed(2)),
+        'tideNextType': nextTide.type,
+        'tideNextTime': formattedHours});
+      
+    } catch (error) {
+      this.homey.log('Error processing tide data: ' + error);
+    }
   }
 
   isEventBetween(eventType) {
@@ -213,14 +224,18 @@ class Tide {
         chunks.push(Buffer.from(chunk));
       });
       res.on('end', function () {
-        var body = Buffer.concat(chunks).toString('utf8');
-        let doc = new DOMParser().parseFromString(body);
+        try {
+          var body = Buffer.concat(chunks).toString('utf8');
+          let doc = new DOMParser().parseFromString(body);
 
-        var nodes = xpath.select("//waterlevel[@flag='forecast']", doc);
-        const hashMap = nodes.reduce((result, item) => {
-          return { ...result, [ item.getAttribute("time") ] : item.getAttribute("value") };
-        }, {});
-        tideObj.updateTideData(hashMap);
+          var nodes = xpath.select("//waterlevel[@flag='forecast']", doc);
+          const hashMap = nodes.reduce((result, item) => {
+            return { ...result, [ item.getAttribute("time") ] : item.getAttribute("value") };
+          }, {});
+          tideObj.updateTideData(hashMap);
+        } catch (error) {
+          console.log('problem with xml-tide: ' + error);
+        }
       });
     });
     
@@ -246,14 +261,18 @@ class Tide {
         chunks.push(Buffer.from(chunk));
       });
       res.on('end', function () {
-        var body = Buffer.concat(chunks).toString('utf8');
-        let doc = new DOMParser().parseFromString(body);
-
-        var nodes = xpath.select("//waterlevel", doc);
-        const hashMap = nodes.reduce((result, item) => {
-          return { ...result, [ item.getAttribute("time") ] : { "tideLevel": item.getAttribute("value"), "flag": item.getAttribute("flag") } };
-        }, {});
-        tideObj.updateEventData(hashMap);
+        try {
+          var body = Buffer.concat(chunks).toString('utf8');
+          let doc = new DOMParser().parseFromString(body);
+  
+          var nodes = xpath.select("//waterlevel", doc);
+          const hashMap = nodes.reduce((result, item) => {
+            return { ...result, [ item.getAttribute("time") ] : { "tideLevel": item.getAttribute("value"), "flag": item.getAttribute("flag") } };
+          }, {});
+          tideObj.updateEventData(hashMap);
+        } catch (error) {
+          console.log('problem with xml-event: ' + error);
+        }
       });
     });
     

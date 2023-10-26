@@ -1,7 +1,9 @@
-Med Flo og fjære kan du automatisere huset (eller naustet?) ditt basert på tidevannet. Du får hendelser ved flo og fjære, samt litt relevant snacks for dine flows. 
+With the Norwegian Tidelevels (Flo og Fjære) app, automate your home (or boathouse?) based on the tides, exclusively for Norwegian waters. Receive events at high and low tides, and integrate relevant triggers for your flows.
 
-Dette er en første versjon og om interesse og tid samsvarer så kan det være det kommer mer funksjonalitet etterhvert. Frem til versjon 1.0.0 så kan det være flowkort endrer seg.
+This is the initial version, and further features might be added based on interest and time. Note that flow cards might change until version 1.0.0.
 
-For å få det til å virke legger du til en enhet. Setter du opp en ny enhet så bruker den Homey sin posisjon som standard, men du kan legge inn andre koordinater for lokalt tidevann. Dette gjøre du under avanserte innstillinger på enheten. Du kan pr. i dag kun legge til en enhet.
+To activate, add a device. By default, the app uses Homey's location, but you can input custom coordinates for local tides under the device's advanced settings. Currently, you can add only one device.
 
-Data hentes fra Kartverket.
+Data from Norwegian Mapping Authority
+
+Source code is available here: https://github.com/arneunneland/homey-flo-fjore
